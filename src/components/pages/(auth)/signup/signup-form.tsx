@@ -1,47 +1,68 @@
+//auth sign up form
 "use client";
 
 import React from "react";
 import { useFormik } from "formik";
 import * as Yup from "yup";
-import { routes } from "@/contants/routes";
 
+import { routes } from "@/contants/routes";
+import { SignUpFormInterface } from "@/store/features/auth/auth.interface";
+import { useSignupMutation } from "@/store/features/auth/auth.api";
 import InputComponent from "@/components/common/input/input";
 import ButtonComponent from "@/components/common/button/button";
 import ErrorMessage from "@/components/common/text/error-message";
 import FormHeader from "@/components/common/text/form-header";
 import LinkTag from "@/components/common/text/link";
+import { useRouter } from "next/navigation";
 
 const validationSchema = Yup.object({
   email: Yup.string()
     .email("Invalid email address")
     .required("Email is required"),
   password: Yup.string().required("Password is required"),
+  username: Yup.string().required("User name is required"),
 });
 
-const LoginForm = () => {
+const SignUpForm = () => {
+  const navigate = useRouter();
+  const [signupApiCall] = useSignupMutation();
   const formik = useFormik({
     initialValues: {
       email: "",
+      username: "",
       password: "",
     },
     validationSchema: validationSchema,
-    onSubmit: (values) => {
-      // Handle form submission here
-      console.log(values);
+    onSubmit: async (values: SignUpFormInterface) => {
+      const response = await signupApiCall(values);
+      console.log(response);
+      if (response?.data?.user) {
+        navigate.replace(routes.auth.login);
+      }
     },
   });
 
   return (
-    <div className="w-[350px] mx-auto h-full justify-center flex flex-col">
-      <p className="text-p-sm font-p text-center">
-        Not registered?{" "}
-        <LinkTag link={routes?.auth?.signup} text="Create an account" />
-      </p>
-      <div className="text-center pt-8 pb-5">
-        <p className="text-center text-grey text-p">Welcome back!</p>
-        <FormHeader text="Login to your account" key={"login-header-text"} />
+    <div className="justify-center h-full flex flex-col w-[60%] mx-auto">
+      <div className="text-center pb-6">
+        <FormHeader text="Create an account" key={"sign-up-header-text"} />
       </div>
-      <form className="flex flex-col gap-4 pt-6" onSubmit={formik.handleSubmit}>
+      <form className="flex flex-col gap-4" onSubmit={formik.handleSubmit}>
+        <div className="w-full">
+          <InputComponent
+            type="text"
+            placeholder="Enter your username"
+            id="username"
+            name="username"
+            label="User Name"
+            onChange={formik.handleChange}
+            onBlur={formik.handleBlur}
+            value={formik.values.username}
+          />
+          {formik.touched.username && formik.errors.username && (
+            <ErrorMessage text={formik.errors.username}></ErrorMessage>
+          )}
+        </div>
         <div className="w-full">
           <InputComponent
             type="email"
@@ -72,10 +93,21 @@ const LoginForm = () => {
             <ErrorMessage text={formik.errors.password}></ErrorMessage>
           )}
         </div>
-        <ButtonComponent text="Login" key={"login-btn"} type="submit" />
+
+        <ButtonComponent
+          text="Create Account"
+          key={"signup-btn"}
+          type="submit"
+        />
       </form>
+      <p className="text-center pt-2">
+        <span className="text-p-sm font-p text-grey">
+          Already have an account ?{" "}
+        </span>
+        <LinkTag text="Log In" link={routes?.auth?.login} />
+      </p>
     </div>
   );
 };
 
-export default LoginForm;
+export default SignUpForm;
